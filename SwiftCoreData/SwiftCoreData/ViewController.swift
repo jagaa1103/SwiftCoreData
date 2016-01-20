@@ -24,15 +24,30 @@ class tableViewController: UITableViewController {
         // Dispose of any resources that can be recreated.
     }
     
+    override func viewWillAppear(animated: Bool) {
+        self.fetchData()
+    }
+    
     override func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return listItems.count
     }
     
     override func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCellWithIdentifier("Cell")! as UITableViewCell
+        let item = listItems[indexPath.row]
+        cell.textLabel?.text = item.valueForKey("item") as? String
         
         return cell
     }
+    
+    override func tableView(tableView: UITableView, editActionsForRowAtIndexPath indexPath: NSIndexPath) -> [UITableViewRowAction]? {
+        let deleteAction = UITableViewRowAction(style: UITableViewRowActionStyle.Default, title: "Delete", handler: { (action: UITableViewRowAction!, indexPath: NSIndexPath) -> Void in
+            self.deleteItem(indexPath.row)
+        })
+        
+        return [deleteAction]
+    }
+    
     
     func addItem(){
         print("Add Button Clicked")
@@ -58,18 +73,38 @@ class tableViewController: UITableViewController {
         self.presentViewController(confirmView, animated: true, completion: nil)
     }
     
-    func saveItem(item: String){
+    func saveItem(insert_item: String){
         let appDelegate = UIApplication.sharedApplication().delegate as! AppDelegate
         let managedContext = appDelegate.managedObjectContext
         let entity = NSEntityDescription.entityForName("ListItems", inManagedObjectContext: managedContext)
         let item = NSManagedObject(entity: entity!, insertIntoManagedObjectContext: managedContext)
-        item.setValue(item, forKey: "item")
+        item.setValue(insert_item, forKey: "item")
         do{
             try managedContext.save()
             listItems.append(item)
         }catch{
             print("error")
         }
+    }
+    
+    func fetchData(){
+        let appDelegate = UIApplication.sharedApplication().delegate as! AppDelegate
+        let managedContext = appDelegate.managedObjectContext
+        let fetchRequest = NSFetchRequest(entityName: "ListItems")
+        do{
+            let results = try managedContext.executeFetchRequest(fetchRequest)
+            listItems = results as! [NSManagedObject]
+        }catch{
+            print("error in Fetch")
+        }
+    }
+    
+    func deleteItem(index: Int){
+        let appDelegate = UIApplication.sharedApplication().delegate as! AppDelegate
+        let managedContext = appDelegate.managedObjectContext
+        managedContext.deleteObject(listItems[index])
+        listItems.removeAtIndex(index)
+        self.tableView.reloadData()
     }
 
 }
